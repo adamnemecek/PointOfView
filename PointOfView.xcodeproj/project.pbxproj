@@ -11,6 +11,7 @@
 		A04D48A9206DFCB800F4E46D /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A04D48A8206DFCB800F4E46D /* ViewController.swift */; };
 		A04D48AB206DFCB900F4E46D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A04D48AA206DFCB900F4E46D /* Assets.xcassets */; };
 		A04D48AE206DFCB900F4E46D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A04D48AC206DFCB900F4E46D /* Main.storyboard */; };
+		A04D48B7206DFE5E00F4E46D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A04D48B6206DFE5E00F4E46D /* Shaders.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		A04D48AD206DFCB900F4E46D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		A04D48AF206DFCB900F4E46D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A04D48B0206DFCB900F4E46D /* PointOfView.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PointOfView.entitlements; sourceTree = "<group>"; };
+		A04D48B6206DFE5E00F4E46D /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +57,7 @@
 			children = (
 				A04D48A6206DFCB800F4E46D /* ApplicationDelegate.swift */,
 				A04D48A8206DFCB800F4E46D /* ViewController.swift */,
+				A04D48B6206DFE5E00F4E46D /* Shaders.metal */,
 				A04D48AA206DFCB900F4E46D /* Assets.xcassets */,
 				A04D48AC206DFCB900F4E46D /* Main.storyboard */,
 				A04D48AF206DFCB900F4E46D /* Info.plist */,
@@ -133,6 +136,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A04D48B7206DFE5E00F4E46D /* Shaders.metal in Sources */,
 				A04D48A9206DFCB800F4E46D /* ViewController.swift in Sources */,
 				A04D48A7206DFCB800F4E46D /* ApplicationDelegate.swift in Sources */,
 			);
@@ -205,6 +209,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = YES;
+				MTL_FAST_MATH = YES;
+				MTL_LANGUAGE_REVISION = Metal20;
+				MTL_OPTIMIZATION_LEVEL = 3;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -259,6 +266,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				MTL_LANGUAGE_REVISION = Metal20;
+				MTL_OPTIMIZATION_LEVEL = 3;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

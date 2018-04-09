@@ -9,5 +9,7 @@ extension ClosedRange {
 }
 
 extension ClosedRange where Bound: FloatingPoint, Bound: ExpressibleByFloatLiteral {
-    var center: Bound { return (upperBound - lowerBound) * 0.5 }
+    var length: Bound { return upperBound - lowerBound }
+    var halfLength: Bound { return length / 2 }
+    var center: Bound { return lowerBound + halfLength }
 }

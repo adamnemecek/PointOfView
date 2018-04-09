@@ -70,10 +70,10 @@
 				A06AB3832078369F00E1BAFF /* Extensions */,
 				A04D48B6206DFE5E00F4E46D /* Shaders.metal */,
 				A04D48AA206DFCB900F4E46D /* Assets.xcassets */,
+				A0E296CA207BFCF1008840E0 /* Assets */,
 				A04D48AC206DFCB900F4E46D /* Main.storyboard */,
 				A04D48AF206DFCB900F4E46D /* Info.plist */,
 				A04D48B0206DFCB900F4E46D /* PointOfView.entitlements */,
-				A0E296CA207BFCF1008840E0 /* Assets */,
 			);
 			path = PointOfView;
 			sourceTree = "<group>";

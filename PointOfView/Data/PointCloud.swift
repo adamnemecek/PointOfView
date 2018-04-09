@@ -27,14 +27,16 @@ public struct Point {
 public class PointCloud {
     public struct ParseError: Error {}
     
-    internal let xPositions: ContiguousArray<Float>
-    internal let yPositions: ContiguousArray<Float>
-    internal let zPositions: ContiguousArray<Float>
-    internal let intensities: ContiguousArray<UInt8>
+    public let count: Int
     
-    let latitudeBounds: ClosedRange<Double>
-    let longitudeBounds: ClosedRange<Double>
-    let elevationBounds: ClosedRange<Double>
+    internal let xPositions: UnsafeMutablePointer<Float>
+    internal let yPositions: UnsafeMutablePointer<Float>
+    internal let zPositions: UnsafeMutablePointer<Float>
+    internal let intensities: UnsafeMutablePointer<UInt8>
+    
+    public let latitudeBounds: ClosedRange<Double>
+    public let longitudeBounds: ClosedRange<Double>
+    public let elevationBounds: ClosedRange<Double>
     
     public init(contentsOf url: URL) throws {
         var latitudes: [Double] = []
@@ -78,10 +80,18 @@ public class PointCloud {
         guard let ensuredLongitudeBounds = longitudeBounds else { throw ParseError() }
         guard let ensuredElevationBounds = elevationBounds else { throw ParseError() }
         
-        self.xPositions = .init(latitudes.map {.init(($0 - ensuredLatitudeBounds.center) / (ensuredLatitudeBounds.upperBound - ensuredLatitudeBounds.center))})
-        self.zPositions = .init(longitudes.map {.init(($0 - ensuredLongitudeBounds.center) / (ensuredLongitudeBounds.upperBound - ensuredLongitudeBounds.center))})
-        self.yPositions = .init(elevations.map {.init(($0 - ensuredElevationBounds.center) / (ensuredElevationBounds.upperBound - ensuredElevationBounds.center))})
-        self.intensities = .init(intensities)
+        self.count = latitudes.count
+        self.xPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.yPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.zPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.intensities = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<UInt8>.stride * count, alignment: 4096).bindMemory(to: UInt8.self, capacity: count)
+        
+        for index in 0 ..< self.count {
+            self.xPositions[index] = .init((longitudes[index] - ensuredLongitudeBounds.center) / ensuredLongitudeBounds.halfLength)
+            self.zPositions[index] = .init((latitudes[index] - ensuredLatitudeBounds.center) / ensuredLatitudeBounds.halfLength)
+            self.yPositions[index] = .init((elevations[index] - ensuredElevationBounds.center) / ensuredElevationBounds.halfLength)
+            self.intensities[index] = intensities[index]
+        }
         
         self.latitudeBounds = ensuredLatitudeBounds
         self.longitudeBounds = ensuredLongitudeBounds
@@ -90,21 +100,14 @@ public class PointCloud {
 }
 
 extension PointCloud: RandomAccessCollection {
-    public typealias Index = Int
-    public typealias Element = Point
-    
-    public var count: Int {
-        return xPositions.count
-    }
-    
     public var startIndex: Int {
         return 0
     }
-    
+
     public var endIndex: Int {
         return count
     }
-    
+
     public subscript(index: Int) -> Point {
         return .init(position: .init(x: xPositions[index], y: yPositions[index], z: zPositions[index]), intensity: intensities[index])
     }

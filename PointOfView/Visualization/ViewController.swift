@@ -8,18 +8,10 @@ public class ViewController: NSViewController, MTKViewDelegate {
     public var pointCloud: PointCloud? = nil { willSet {
         pointCloudBuffers = nil
         guard let pointCloud = newValue else { return }
-        guard let xPositions = pointCloud.xPositions.withUnsafeBytes({
-            device.makeBuffer(bytesNoCopy: UnsafeMutableRawPointer(mutating: $0.baseAddress!), length: $0.count, options: .storageModeShared, deallocator: nil)
-        }) else { return }
-        guard let yPositions = pointCloud.yPositions.withUnsafeBytes({
-            device.makeBuffer(bytesNoCopy: UnsafeMutableRawPointer(mutating: $0.baseAddress!), length: $0.count, options: .storageModeShared, deallocator: nil)
-        }) else { return }
-        guard let zPositions = pointCloud.zPositions.withUnsafeBytes({
-            device.makeBuffer(bytesNoCopy: UnsafeMutableRawPointer(mutating: $0.baseAddress!), length: $0.count, options: .storageModeShared, deallocator: nil)
-        }) else { return }
-        guard let intensities = pointCloud.intensities.withUnsafeBytes({
-            device.makeBuffer(bytesNoCopy: UnsafeMutableRawPointer(mutating: $0.baseAddress!), length: $0.count, options: .storageModeShared, deallocator: nil)
-        }) else { return }
+        guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
+        guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
+        guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
+        guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: pointCloud.count * MemoryLayout<UInt8>.stride, options: .storageModeShared, deallocator: nil) else { return }
         pointCloudBuffers = (xPositions, yPositions, zPositions, intensities)
     }}
     private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil

@@ -8,10 +8,10 @@ public class ViewController: NSViewController, MTKViewDelegate {
     public var pointCloud: PointCloud? = nil { willSet {
         pointCloudBuffers = nil
         guard let pointCloud = newValue else { return }
-        guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
-        guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
-        guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: pointCloud.count * MemoryLayout<Float>.stride, options: .storageModeShared, deallocator: nil) else { return }
-        guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: pointCloud.count * MemoryLayout<UInt8>.stride, options: .storageModeShared, deallocator: nil) else { return }
+        guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+        guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+        guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+        guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: (pointCloud.count * MemoryLayout<UInt8>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         pointCloudBuffers = (xPositions, yPositions, zPositions, intensities)
     }}
     private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil

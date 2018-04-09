@@ -38,6 +38,13 @@ public class PointCloud {
     public let longitudeBounds: ClosedRange<Double>
     public let elevationBounds: ClosedRange<Double>
     
+    deinit {
+        xPositions.deallocate()
+        yPositions.deallocate()
+        zPositions.deallocate()
+        intensities.deallocate()
+    }
+    
     public init(contentsOf url: URL) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
@@ -81,10 +88,10 @@ public class PointCloud {
         guard let ensuredElevationBounds = elevationBounds else { throw ParseError() }
         
         self.count = latitudes.count
-        self.xPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
-        self.yPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
-        self.zPositions = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<Float>.stride * count, alignment: 4096).bindMemory(to: Float.self, capacity: count)
-        self.intensities = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<UInt8>.stride * count, alignment: 4096).bindMemory(to: UInt8.self, capacity: count)
+        self.xPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.yPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.zPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
+        self.intensities = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<UInt8>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: UInt8.self, capacity: count)
         
         for index in 0 ..< self.count {
             self.xPositions[index] = .init((longitudes[index] - ensuredLongitudeBounds.center) / ensuredLongitudeBounds.halfLength)

@@ -17,6 +17,7 @@
 		A0BF1B08207ACF4500F19C7F /* PointCloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BF1B07207ACF4500F19C7F /* PointCloud.swift */; };
 		A0E296CB207BFE4A008840E0 /* pointcloud1.fuse in Resources */ = {isa = PBXBuildFile; fileRef = A0E296C7207BFC45008840E0 /* pointcloud1.fuse */; };
 		A0E296CC207BFE4A008840E0 /* pointcloud2.fuse in Resources */ = {isa = PBXBuildFile; fileRef = A0E296C6207BFC44008840E0 /* pointcloud2.fuse */; };
+		A0E296CE207C0AAF008840E0 /* Int.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E296CD207C0AAF008840E0 /* Int.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		A0BF1B07207ACF4500F19C7F /* PointCloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCloud.swift; sourceTree = "<group>"; };
 		A0E296C6207BFC44008840E0 /* pointcloud2.fuse */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pointcloud2.fuse; sourceTree = "<group>"; };
 		A0E296C7207BFC45008840E0 /* pointcloud1.fuse */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pointcloud1.fuse; sourceTree = "<group>"; };
+		A0E296CD207C0AAF008840E0 /* Int.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Int.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				A06E45CB207AFA0200B0B01B /* ClosedRange.swift */,
+				A0E296CD207C0AAF008840E0 /* Int.swift */,
 				A06AB3812078369300E1BAFF /* simd.swift */,
 			);
 			path = Extensions;
@@ -188,6 +191,7 @@
 				A0BF1B08207ACF4500F19C7F /* PointCloud.swift in Sources */,
 				A04D48B7206DFE5E00F4E46D /* Shaders.metal in Sources */,
 				A06AB3822078369300E1BAFF /* simd.swift in Sources */,
+				A0E296CE207C0AAF008840E0 /* Int.swift in Sources */,
 				A06E45CC207AFA0200B0B01B /* ClosedRange.swift in Sources */,
 				A04D48A9206DFCB800F4E46D /* ViewController.swift in Sources */,
 				A04D48A7206DFCB800F4E46D /* ApplicationDelegate.swift in Sources */,

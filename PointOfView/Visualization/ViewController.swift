@@ -46,16 +46,10 @@ public class ViewController: NSViewController, MTKViewDelegate {
         
         view.autoResizeDrawable = true
         view.colorPixelFormat = .rgba16Float
+        view.depthStencilPixelFormat = .depth32Float
         view.colorspace = CGColorSpace(name: CGColorSpace.linearSRGB)
         view.delegate = self
         view.device = device
-        
-        if device.isDepth24Stencil8PixelFormatSupported {
-            view.depthStencilPixelFormat = .depth24Unorm_stencil8
-        }
-        else {
-            view.depthStencilPixelFormat = .depth32Float
-        }
         
         do {
             guard let vertexShader = library.makeFunction(name: "v_plotting") else {

@@ -52,9 +52,9 @@ public class PointCloud {
             var bufferIndex = buffer.startIndex
             while bufferIndex < buffer.endIndex {
                 guard let firstSpace = buffer[bufferIndex...].index(of: .init(ascii: " ")) else { throw ParseError() }
-                guard let secondSpace = buffer[firstSpace...].index(of: .init(ascii: " ")) else { throw ParseError() }
-                guard let thirdSpace = buffer[secondSpace...].index(of: .init(ascii: " ")) else { throw ParseError() }
-                guard let newline = buffer[thirdSpace...].index(of: .init(ascii: "\n")) else { throw ParseError() }
+                guard let secondSpace = buffer[(firstSpace + 1)...].index(of: .init(ascii: " ")) else { throw ParseError() }
+                guard let thirdSpace = buffer[(secondSpace + 1)...].index(of: .init(ascii: " ")) else { throw ParseError() }
+                guard let newline = buffer[(thirdSpace + 1)...].index(of: .init(ascii: "\n")) else { throw ParseError() }
                 
                 let latitude = try parseDecimal(bytes: buffer[bufferIndex ..< firstSpace])
                 let longitude = try parseDecimal(bytes: buffer[(firstSpace + 1) ..< secondSpace])

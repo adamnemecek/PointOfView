@@ -12,6 +12,9 @@
 		A04D48AB206DFCB900F4E46D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A04D48AA206DFCB900F4E46D /* Assets.xcassets */; };
 		A04D48AE206DFCB900F4E46D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A04D48AC206DFCB900F4E46D /* Main.storyboard */; };
 		A04D48B7206DFE5E00F4E46D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A04D48B6206DFE5E00F4E46D /* Shaders.metal */; };
+		A06AB3822078369300E1BAFF /* simd.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06AB3812078369300E1BAFF /* simd.swift */; };
+		A06E45CC207AFA0200B0B01B /* ClosedRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06E45CB207AFA0200B0B01B /* ClosedRange.swift */; };
+		A0BF1B08207ACF4500F19C7F /* PointCloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BF1B07207ACF4500F19C7F /* PointCloud.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +26,9 @@
 		A04D48AF206DFCB900F4E46D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A04D48B0206DFCB900F4E46D /* PointOfView.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PointOfView.entitlements; sourceTree = "<group>"; };
 		A04D48B6206DFE5E00F4E46D /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		A06AB3812078369300E1BAFF /* simd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simd.swift; sourceTree = "<group>"; };
+		A06E45CB207AFA0200B0B01B /* ClosedRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedRange.swift; sourceTree = "<group>"; };
+		A0BF1B07207ACF4500F19C7F /* PointCloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCloud.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,8 +61,9 @@
 		A04D48A5206DFCB800F4E46D /* PointOfView */ = {
 			isa = PBXGroup;
 			children = (
-				A04D48A6206DFCB800F4E46D /* ApplicationDelegate.swift */,
-				A04D48A8206DFCB800F4E46D /* ViewController.swift */,
+				A06AB3852078370100E1BAFF /* Visualization */,
+				A06AB384207836DA00E1BAFF /* Data */,
+				A06AB3832078369F00E1BAFF /* Extensions */,
 				A04D48B6206DFE5E00F4E46D /* Shaders.metal */,
 				A04D48AA206DFCB900F4E46D /* Assets.xcassets */,
 				A04D48AC206DFCB900F4E46D /* Main.storyboard */,
@@ -64,6 +71,32 @@
 				A04D48B0206DFCB900F4E46D /* PointOfView.entitlements */,
 			);
 			path = PointOfView;
+			sourceTree = "<group>";
+		};
+		A06AB3832078369F00E1BAFF /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A06E45CB207AFA0200B0B01B /* ClosedRange.swift */,
+				A06AB3812078369300E1BAFF /* simd.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		A06AB384207836DA00E1BAFF /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				A0BF1B07207ACF4500F19C7F /* PointCloud.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		A06AB3852078370100E1BAFF /* Visualization */ = {
+			isa = PBXGroup;
+			children = (
+				A04D48A6206DFCB800F4E46D /* ApplicationDelegate.swift */,
+				A04D48A8206DFCB800F4E46D /* ViewController.swift */,
+			);
+			path = Visualization;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -136,7 +169,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0BF1B08207ACF4500F19C7F /* PointCloud.swift in Sources */,
 				A04D48B7206DFE5E00F4E46D /* Shaders.metal in Sources */,
+				A06AB3822078369300E1BAFF /* simd.swift in Sources */,
+				A06E45CC207AFA0200B0B01B /* ClosedRange.swift in Sources */,
 				A04D48A9206DFCB800F4E46D /* ViewController.swift in Sources */,
 				A04D48A7206DFCB800F4E46D /* ApplicationDelegate.swift in Sources */,
 			);
@@ -216,6 +252,7 @@
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_PRECOMPILE_BRIDGING_HEADER = YES;
 			};
 			name = Debug;
 		};
@@ -272,6 +309,7 @@
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_PRECOMPILE_BRIDGING_HEADER = YES;
 			};
 			name = Release;
 		};

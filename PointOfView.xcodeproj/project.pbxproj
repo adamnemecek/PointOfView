@@ -29,6 +29,8 @@
 		A06AB3812078369300E1BAFF /* simd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simd.swift; sourceTree = "<group>"; };
 		A06E45CB207AFA0200B0B01B /* ClosedRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedRange.swift; sourceTree = "<group>"; };
 		A0BF1B07207ACF4500F19C7F /* PointCloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCloud.swift; sourceTree = "<group>"; };
+		A0E296C6207BFC44008840E0 /* pointcloud2.fuse */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pointcloud2.fuse; sourceTree = "<group>"; };
+		A0E296C7207BFC45008840E0 /* pointcloud1.fuse */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pointcloud1.fuse; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				A04D48AC206DFCB900F4E46D /* Main.storyboard */,
 				A04D48AF206DFCB900F4E46D /* Info.plist */,
 				A04D48B0206DFCB900F4E46D /* PointOfView.entitlements */,
+				A0E296CA207BFCF1008840E0 /* Assets */,
 			);
 			path = PointOfView;
 			sourceTree = "<group>";
@@ -97,6 +100,15 @@
 				A04D48A8206DFCB800F4E46D /* ViewController.swift */,
 			);
 			path = Visualization;
+			sourceTree = "<group>";
+		};
+		A0E296CA207BFCF1008840E0 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				A0E296C7207BFC45008840E0 /* pointcloud1.fuse */,
+				A0E296C6207BFC44008840E0 /* pointcloud2.fuse */,
+			);
+			path = Assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

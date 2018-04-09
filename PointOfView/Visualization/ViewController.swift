@@ -31,7 +31,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let view = self.view as? MTKView else {
             fatalError("The ViewController must be instantiated with an MTKView")
         }
-        guard let device = MTLCreateSystemDefaultDevice() else {
+        guard let device = MTLCopyAllDevices().first(where: { $0.isLowPower }) ?? MTLCreateSystemDefaultDevice() else {
             fatalError("No usable graphics device found")
         }
         guard let commandQueue = device.makeCommandQueue() else {

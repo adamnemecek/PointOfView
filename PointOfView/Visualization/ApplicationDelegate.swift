@@ -5,7 +5,7 @@ public class ApplicationDelegate: NSObject, NSApplicationDelegate {
     var pointCloud: PointCloud! = nil
     
     public func applicationWillFinishLaunching(_ notification: Notification) {
-        pointCloud = try! PointCloud(contentsOf: Bundle.main.url(forResource: "pointcloud1", withExtension: "fuse")!)
+        pointCloud = try! PointCloud(contentsOf: Bundle.main.url(forResource: "pointcloud2", withExtension: "fuse")!)
     }
     
     public func applicationDidFinishLaunching(_ notification: Notification) {

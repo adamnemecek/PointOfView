@@ -17,7 +17,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
     private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil
     
     var cameraOrbit: (theta: Float, phi: Float) = (0, 0)
-    var cameraDistance: Float = 1
+    var cameraDistance: Float = 1.5
     
     public override func viewDidLoad() {
         guard let view = self.view as? MTKView else {
@@ -76,8 +76,8 @@ public class ViewController: NSViewController, MTKViewDelegate {
         let cameraPosition = float3(xy: .init(0), z: -cameraDistance).rotated(about: .xAxis, by: cameraOrbit.phi).rotated(about: .yAxis, by: cameraOrbit.theta)
         let cameraForward = -cameraPosition
         let cameraUp = float3.yAxis.rotated(about: .xAxis, by: cameraOrbit.phi)
-        let cameraMatrix = float4x4.lookat(forward: cameraForward, up: cameraUp) * .translation(by: -cameraPosition)
-        var projectionMatrix = float4x4.infinitePerspective(fovy: .pi, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height)) * cameraMatrix
+        let cameraMatrix = float4x4.lookat(forward: cameraForward, up: cameraUp) * float4x4.translation(by: -cameraPosition)
+        var projectionMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height)) * cameraMatrix
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }

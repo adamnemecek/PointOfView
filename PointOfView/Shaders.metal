@@ -3,6 +3,7 @@ using namespace metal;
 
 struct PointVertex {
     float4 clipPosition [[position]];
+    float pointSize [[point_size]];
     float intensity;
 };
 
@@ -14,6 +15,7 @@ vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
                               uint               vertexID    [[vertex_id]]) {
     PointVertex out;
     out.clipPosition = projection * float4(xPositions[vertexID], yPositions[vertexID], zPositions[vertexID], 1);
+    out.pointSize = 1;
     out.intensity = float(intensities[vertexID]) / 255;
     return out;
 }

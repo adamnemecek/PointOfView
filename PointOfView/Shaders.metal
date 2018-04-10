@@ -5,7 +5,7 @@ constexpr constant static float pointRadius = 2.0e-3;
 
 struct PointVertex {
     float4 clipPosition           [[position]];
-    float3 viewPosition [[center_perspective]];
+    float3 viewPosition [[sample_perspective]];
     float3 pointViewPosition          [[flat]];
     float intensity                   [[flat]];
 };

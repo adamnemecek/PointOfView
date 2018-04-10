@@ -33,7 +33,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let view = self.view as? MTKView else {
             fatalError("The ViewController must be instantiated with an MTKView")
         }
-        guard let device = MTLCopyAllDevices().first(where: { $0.isLowPower }) ?? MTLCreateSystemDefaultDevice() else {
+        guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("No usable graphics device found")
         }
         guard let commandQueue = device.makeCommandQueue() else {
@@ -49,6 +49,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
         view.autoResizeDrawable = true
         view.colorPixelFormat = .rgba16Float
         view.depthStencilPixelFormat = .depth32Float
+        view.sampleCount = 8
         view.colorspace = CGColorSpace(name: CGColorSpace.linearSRGB)
         view.delegate = self
         view.device = device
@@ -63,6 +64,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.vertexFunction = vertexShader
             descriptor.fragmentFunction = fragmentShader
+            descriptor.sampleCount = view.sampleCount
             descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
             descriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
             descriptor.inputPrimitiveTopology = .triangle

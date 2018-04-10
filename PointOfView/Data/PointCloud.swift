@@ -28,9 +28,74 @@ public class PointCloud {
     public struct ParseError: Error {
     }
     
+    private class MutationCell<Wrapped> {
+        var contents: Wrapped
+        
+        init(_ contents: Wrapped) {
+            self.contents = contents
+        }
+    }
+    
     private enum Octree {
+        case `nil`
         case leaf([Index])
-        case branch([Octree])
+        case branch(MutationCell<(Octree, Octree, Octree, Octree, Octree, Octree, Octree, Octree)>)
+        
+        mutating func splitIfNeeded(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
+            switch self {
+            case let .leaf(points):
+                guard points.count > maximumPointsPerLeaf else { return }
+                var subtreePoints = [[Index]](repeating: [], count: 8)
+                
+                for point in points {
+                    let xPosition = xPositions[point]
+                    let yPosition = yPositions[point]
+                    let zPosition = zPositions[point]
+                    subtreePoints[bounds.subtreeIndex(for: (xPosition, yPosition, zPosition))].append(point)
+                }
+    
+                var subtrees = (
+                    Octree.leaf(subtreePoints[0]),
+                    Octree.leaf(subtreePoints[1]),
+                    Octree.leaf(subtreePoints[2]),
+                    Octree.leaf(subtreePoints[3]),
+                    Octree.leaf(subtreePoints[4]),
+                    Octree.leaf(subtreePoints[5]),
+                    Octree.leaf(subtreePoints[6]),
+                    Octree.leaf(subtreePoints[7])
+                )
+                
+                subtrees.0.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 0), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.1.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 1), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.2.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 2), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.3.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 3), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.4.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 4), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.5.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 5), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.6.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 6), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                subtrees.7.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 7), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                
+                self = .branch(MutationCell(subtrees))
+            default:
+                preconditionFailure()
+            }
+        }
+        
+        mutating func insertPoint(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, pointIndex: Int, pointPosition: (x: Float, y: Float, z: Float), bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
+            switch self {
+            case var .leaf(points):
+                self = .nil
+                points.append(pointIndex)
+                self = .leaf(points)
+                self.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds, maximumPointsPerLeaf: maximumPointsPerLeaf)
+            case let .branch(subtrees):
+                let subtreeIndex = bounds.subtreeIndex(for: pointPosition)
+                withUnsafeMutableBytes(of: &subtrees.contents) {
+                    $0.bindMemory(to: Octree.self)[subtreeIndex].insertPoint(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, pointIndex: pointIndex, pointPosition: pointPosition, bounds: bounds.subtreeBounds(at: subtreeIndex), maximumPointsPerLeaf: maximumPointsPerLeaf)
+                }
+            default:
+                preconditionFailure()
+            }
+        }
     }
     
     private struct OctreeBounds {
@@ -78,7 +143,7 @@ public class PointCloud {
         intensities.deallocate()
     }
     
-    public init(contentsOf url: URL, pointsPerLeaf: Int = 16) throws {
+    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 16) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
         var elevations: [Double] = []
@@ -133,50 +198,6 @@ public class PointCloud {
         
         var octree = Octree.leaf([])
         
-        func balanceLeaf(_ octree: Octree, bounds: OctreeBounds) -> Octree {
-            guard case let .leaf(points) = octree else {
-                preconditionFailure()
-            }
-            
-            guard points.count > pointsPerLeaf else {
-                return octree
-            }
-            
-            var subtreePoints = [[Index]](repeating: [], count: 8)
-            
-            for pointIndex in points {
-                let xPosition = xPositions[pointIndex]
-                let yPosition = yPositions[pointIndex]
-                let zPosition = zPositions[pointIndex]
-                subtreePoints[bounds.subtreeIndex(for: (xPosition, yPosition, zPosition))].append(pointIndex)
-            }
-            
-            let subtrees = [
-                balanceLeaf(.leaf(subtreePoints[0]), bounds: bounds.subtreeBounds(at: 0)),
-                balanceLeaf(.leaf(subtreePoints[1]), bounds: bounds.subtreeBounds(at: 1)),
-                balanceLeaf(.leaf(subtreePoints[2]), bounds: bounds.subtreeBounds(at: 2)),
-                balanceLeaf(.leaf(subtreePoints[3]), bounds: bounds.subtreeBounds(at: 3)),
-                balanceLeaf(.leaf(subtreePoints[4]), bounds: bounds.subtreeBounds(at: 4)),
-                balanceLeaf(.leaf(subtreePoints[5]), bounds: bounds.subtreeBounds(at: 5)),
-                balanceLeaf(.leaf(subtreePoints[6]), bounds: bounds.subtreeBounds(at: 6)),
-                balanceLeaf(.leaf(subtreePoints[7]), bounds: bounds.subtreeBounds(at: 7)),
-            ]
-            
-            return .branch(subtrees)
-        }
-        
-        func addPointToOctree(_ octree: Octree, pointIndex: Int, position: (x: Float, y: Float, z: Float), bounds: OctreeBounds) -> Octree {
-            switch octree {
-            case var .leaf(points):
-                points.append(pointIndex)
-                return balanceLeaf(.leaf(points), bounds: bounds)
-            case var .branch(subtrees):
-                let subtreeIndex = bounds.subtreeIndex(for: position)
-                subtrees[subtreeIndex] = addPointToOctree(subtrees[subtreeIndex], pointIndex: pointIndex, position: position, bounds: bounds.subtreeBounds(at: subtreeIndex))
-                return .branch(subtrees)
-            }
-        }
-        
         for index in 0 ..< count {
             xPositions[index] = .init((longitudes[index] - ensuredLongitudeBounds.center) / ensuredLongitudeBounds.halfLength)
             zPositions[index] = .init((latitudes[index] - ensuredLatitudeBounds.center) / ensuredLatitudeBounds.halfLength)
@@ -185,7 +206,7 @@ public class PointCloud {
             intensities[index] = intensities[index]
             
             let position = (x: xPositions[index], y: yPositions[index], z: zPositions[index])
-            octree = addPointToOctree(octree, pointIndex: index, position: position, bounds: .base)
+            octree.insertPoint(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, pointIndex: index, pointPosition: position, bounds: .base, maximumPointsPerLeaf: maximumPointsPerLeaf)
         }
         
         self.count = count

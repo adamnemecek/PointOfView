@@ -63,6 +63,15 @@ public class ViewController: NSViewController, MTKViewDelegate {
         }
     }
     
+    public override var acceptsFirstResponder: Bool {
+        return true
+    }
+    
+    public override func scrollWheel(with event: NSEvent) {
+        cameraOrbit.theta += .init(event.scrollingDeltaX / view.frame.width)
+        cameraOrbit.phi += .init(event.scrollingDeltaY / view.frame.height)
+    }
+    
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         return
     }
@@ -72,11 +81,8 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let pointCloudBuffers = pointCloudBuffers else { return }
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else { return }
         guard let drawable = view.currentDrawable else { return }
-
-        let cameraPosition = float3(xy: .init(0), z: -cameraDistance).rotated(about: .xAxis, by: cameraOrbit.phi).rotated(about: .yAxis, by: cameraOrbit.theta)
-        let cameraForward = -cameraPosition
-        let cameraUp = float3.yAxis.rotated(about: .xAxis, by: cameraOrbit.phi)
-        let cameraMatrix = float4x4.lookat(forward: cameraForward, up: cameraUp) * float4x4.translation(by: -cameraPosition)
+        
+        let cameraMatrix = float4x4.translation(by: .init(xy: .init(0), z: cameraDistance)) * .rotation(about: .xAxis, by: -cameraOrbit.phi) * .rotation(about: .yAxis, by: -cameraOrbit.theta)
         var projectionMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height)) * cameraMatrix
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }

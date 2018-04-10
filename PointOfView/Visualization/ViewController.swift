@@ -49,7 +49,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
         view.autoResizeDrawable = true
         view.colorPixelFormat = .rgba16Float
         view.depthStencilPixelFormat = .depth32Float
-        view.sampleCount = 8
+        view.sampleCount = 2
         view.colorspace = CGColorSpace(name: CGColorSpace.linearSRGB)
         view.delegate = self
         view.device = device
@@ -65,6 +65,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
             descriptor.vertexFunction = vertexShader
             descriptor.fragmentFunction = fragmentShader
             descriptor.sampleCount = view.sampleCount
+            descriptor.isAlphaToCoverageEnabled = true
             descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
             descriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
             descriptor.inputPrimitiveTopology = .triangle

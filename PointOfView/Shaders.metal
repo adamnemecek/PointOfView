@@ -1,11 +1,11 @@
 #include <metal_stdlib>
 using namespace metal;
 
-constexpr constant static float pointRadius = 2.0e-3;
+constexpr constant static float pointRadius = 1.0e-3;
 
 struct PointVertex {
     float4 clipPosition           [[position]];
-    float3 viewPosition [[sample_perspective]];
+    float3 viewPosition [[center_perspective]];
     float3 pointViewPosition          [[flat]];
     float intensity                   [[flat]];
 };
@@ -50,12 +50,7 @@ fragment float4 f_plotting(PointVertex in [[stage_in]]) {
     float3 c2 = c * c;
     float d2s = d2.x + d2.y + d2.z;
     float c2s = c2.x + c2.y + c2.z;
-    
-    if (cds2 - d2s * (c2s - pointRadius * pointRadius) >= 0) {
-        return float4(float3(in.intensity), 1);
-    }
-    else {
-        discard_fragment();
-        return float4(0);
-    }
+    float radicand = max(cds2 - d2s * (c2s - pointRadius * pointRadius), 0.0);
+    float factor = 2 * sqrt(radicand) / d2s;
+    return float4(float3(in.intensity), pow(factor / pointRadius / 2, 2.0));
 }

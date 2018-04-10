@@ -65,7 +65,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
             descriptor.fragmentFunction = fragmentShader
             descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
             descriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
-            descriptor.inputPrimitiveTopology = .point
+            descriptor.inputPrimitiveTopology = .triangle
             plottingPipelineState = try device.makeRenderPipelineState(descriptor: descriptor)
         }
         catch let error {
@@ -112,15 +112,17 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else { return }
         guard let drawable = view.currentDrawable else { return }
         
-        var projectionMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height)) * cameraMatrix
+        var clipMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height))
+        var viewMatrix = cameraMatrix
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
         renderEncoder.setRenderPipelineState(plottingPipelineState)
         renderEncoder.setDepthStencilState(plottingDepthStencilState)
         renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0], range: 0 ..< 4)
-        renderEncoder.setVertexBytes(&projectionMatrix, length: MemoryLayout<float4x4>.size, index: 4)
-        renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCloud.count)
+        renderEncoder.setVertexBytes(&viewMatrix, length: MemoryLayout<float4x4>.size, index: 4)
+        renderEncoder.setVertexBytes(&clipMatrix, length: MemoryLayout<float4x4>.size, index: 5)
+        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: pointCloud.count * 3)
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()

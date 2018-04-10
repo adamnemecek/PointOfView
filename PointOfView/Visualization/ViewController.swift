@@ -4,6 +4,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
     public private(set) var device: MTLDevice! = nil
     private var commandQueue: MTLCommandQueue! = nil
     private var plottingPipelineState: MTLRenderPipelineState! = nil
+    private var plottingDepthStencilState: MTLDepthStencilState! = nil
     
     public var pointCloud: PointCloud? = nil { willSet {
         pointCloudBuffers = nil
@@ -70,6 +71,16 @@ public class ViewController: NSViewController, MTKViewDelegate {
         catch let error {
             fatalError("Could not compile the plotting shaders: \(error.localizedDescription)")
         }
+        
+        do {
+            let descriptor = MTLDepthStencilDescriptor()
+            descriptor.depthCompareFunction = .less
+            descriptor.isDepthWriteEnabled = true
+            guard let state = device.makeDepthStencilState(descriptor: descriptor) else {
+                fatalError("The depth test configuration could not be compiled")
+            }
+            plottingDepthStencilState = state
+        }
     }
     
     public override var acceptsFirstResponder: Bool {
@@ -106,6 +117,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
         renderEncoder.setRenderPipelineState(plottingPipelineState)
+        renderEncoder.setDepthStencilState(plottingDepthStencilState)
         renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0], range: 0 ..< 4)
         renderEncoder.setVertexBytes(&projectionMatrix, length: MemoryLayout<float4x4>.size, index: 4)
         renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: pointCloud.count)

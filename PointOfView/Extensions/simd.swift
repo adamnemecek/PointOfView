@@ -95,7 +95,7 @@ extension float4x4 {
     
     static func lookat(forward: float3, up: float3) -> float4x4 {
         let normalizedForward = normalize(forward)
-        let right = normalize(cross(forward, up))
+        let right = normalize(cross(up, forward))
         let orthogonalizedUp = normalize(cross(forward, right))
         return float4x4(columns: (
             float4(x: right.x, y: orthogonalizedUp.x, z: normalizedForward.x, w: 0),

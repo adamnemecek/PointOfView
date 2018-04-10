@@ -110,7 +110,7 @@ extension float4x4 {
             float4(x: 1 / tan(fovy / 2) / aspectRatio, yzw: .init(0)),
             float4(x: 0, y: 1 / tan(fovy / 2), zw: .init(0)),
             float4(xy: .init(0), zw: .init(1)),
-            float4(xy: .init(0), z: 1, w: 0)
+            float4(xy: .init(0), z: -2 * nearDistance, w: 0)
         ))
     }
 }

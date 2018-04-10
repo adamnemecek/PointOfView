@@ -51,7 +51,7 @@ public class PointCloud {
                     let xPosition = xPositions[point]
                     let yPosition = yPositions[point]
                     let zPosition = zPositions[point]
-                    subtreePoints[bounds.subtreeIndex(for: (xPosition, yPosition, zPosition))].append(point)
+                    subtreePoints[bounds.subtreeIndex(for: .init(x: xPosition, y: yPosition, z: zPosition))].append(point)
                 }
     
                 var subtrees = (
@@ -80,7 +80,7 @@ public class PointCloud {
             }
         }
         
-        mutating func insertPoint(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, pointIndex: Int, pointPosition: (x: Float, y: Float, z: Float), bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
+        mutating func insertPoint(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, pointIndex: Int, pointPosition: float3, bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
             switch self {
             case var .leaf(points):
                 self = .nil
@@ -113,7 +113,7 @@ public class PointCloud {
             )
         }
         
-        func subtreeIndex(for position: (x: Float, y: Float, z: Float)) -> Int {
+        func subtreeIndex(for position: float3) -> Int {
             let xBit = position.x > x.center
             let yBit = position.y > y.center
             let zBit = position.z > z.center
@@ -205,7 +205,7 @@ public class PointCloud {
             raddi[index] = .infinity
             intensities[index] = intensities[index]
             
-            let position = (x: xPositions[index], y: yPositions[index], z: zPositions[index])
+            let position = float3(x: xPositions[index], y: yPositions[index], z: zPositions[index])
             octree.insertPoint(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, pointIndex: index, pointPosition: position, bounds: .base, maximumPointsPerLeaf: maximumPointsPerLeaf)
         }
         
@@ -230,5 +230,29 @@ extension PointCloud: RandomAccessCollection {
 
     public subscript(index: Int) -> Point {
         return .init(position: .init(x: xPositions[index], y: yPositions[index], z: zPositions[index]), intensity: intensities[index])
+    }
+}
+
+extension PointCloud {
+    func nearestPoint(from position: float3) -> (distance: Float, index: Index)? {
+        func recurse(octree: Octree, bounds: OctreeBounds = .base) -> (Float, Index)? {
+            switch octree {
+            case let .leaf(points):
+                return (zip(points.lazy.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 })
+            case let .branch(subtrees):
+                let subtreeIndex = bounds.subtreeIndex(for: position)
+                
+                if let nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex)) }) { return nearest }
+                
+                for index in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
+                    if let nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[index], bounds: bounds.subtreeBounds(at: subtreeIndex)) }) { return nearest }
+                }
+                
+                return nil
+            default:
+                preconditionFailure()
+            }
+        }
+        return recurse(octree: self.octree)
     }
 }

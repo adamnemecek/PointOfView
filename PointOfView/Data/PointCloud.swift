@@ -251,25 +251,98 @@ extension PointCloud {
         func recurse(octree: Octree, bounds: OctreeBounds = .base, best: (distance: Float, index: Index) = (.infinity, -1)) -> (distance: Float, index: Index) {
             switch octree {
             case let .leaf(points):
-                let nearest = (zip(points.lazy.filter { $0 != pointIndex }.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 }) ?? best
-                if nearest.0 < best.distance {
-                    return nearest
+                var nearest = best
+                for point in points {
+                    if point != pointIndex {
+                        let distance = simd.distance(self[point].position, position)
+                        if distance < nearest.distance {
+                            nearest = (distance, point)
+                        }
+                    }
                 }
-                else {
-                    return best
-                }
+                return nearest
             case let .branch(subtrees):
                 let subtreeIndex = bounds.subtreeIndex(for: position)
                 var nearest = withUnsafeBytes(of: &subtrees.contents) {
                     recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex), best: best)
                 }
                 
-                for alternativeSubtreeIndex in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
-                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: alternativeSubtreeIndex)
+                if subtreeIndex != 0 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 0)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
                     if distanceToAlternativeSubtree < nearest.distance {
                         nearest = withUnsafeBytes(of: &subtrees.contents) {
-                            recurse(octree: $0.bindMemory(to: Octree.self)[alternativeSubtreeIndex], bounds: alternativeSubtreeBounds, best: nearest)
+                            recurse(octree: $0.bindMemory(to: Octree.self)[0], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 1 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 1)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[1], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 2 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 2)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[2], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 3 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 3)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[3], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 4 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 4)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[4], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 5 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 5)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[5], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 6 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 6)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[6], bounds: alternativeSubtreeBounds, best: nearest)
+                        }
+                    }
+                }
+                
+                if subtreeIndex != 7 {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: 7)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[7], bounds: alternativeSubtreeBounds, best: nearest)
                         }
                     }
                 }

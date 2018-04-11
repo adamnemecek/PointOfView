@@ -226,7 +226,7 @@ public class PointCloud {
         self.octree = octree
         
         for index in 0 ..< count {
-            raddi[index] = self.nearestPoint(from: self[index].position).distance
+            raddi[index] = self.nearestPoint(from: self[index].position).distance / 2
         }
     }
 }

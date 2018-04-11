@@ -41,7 +41,7 @@ vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
             out.viewPosition = out.pointViewPosition - vertical * out.pointRadius - horizontal * out.pointRadius / sqrt(3.0) * 3;
     }
     
-    out.pointViewPosition -= forward * out.pointRadius;
+//    out.pointViewPosition -= forward * out.pointRadius;
     out.clipPosition = uniforms.clipMatrix * float4(out.viewPosition, 1);
     return out;
 }
@@ -56,7 +56,13 @@ fragment float4 f_plotting(PointVertex in [[stage_in]]) {
     float3 c2 = c * c;
     float d2s = d2.x + d2.y + d2.z;
     float c2s = c2.x + c2.y + c2.z;
-    float radicand = max(cds2 - d2s * (c2s - in.pointRadius * in.pointRadius), 0.0);
-    float factor = 2 * sqrt(radicand) / d2s;
-    return float4(in.pointColor, pow(factor / in.pointRadius / 2, 2.0));
+    float radicand = cds2 - d2s * (c2s - in.pointRadius * in.pointRadius);
+//    float factor = 2 * sqrt(radicand) / d2s;
+    if (radicand >= 0) {
+        return float4(in.pointColor, 1);
+    }
+    else {
+        discard_fragment();
+        return float4(0);
+    }
 }

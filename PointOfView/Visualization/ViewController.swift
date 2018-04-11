@@ -6,16 +6,17 @@ public class ViewController: NSViewController, MTKViewDelegate {
     private var plottingPipelineState: MTLRenderPipelineState! = nil
     private var plottingDepthStencilState: MTLDepthStencilState! = nil
     
-    public var pointCloud: PointCloud? = nil { willSet {
-        pointCloudBuffers = nil
-        guard let pointCloud = newValue else { return }
-        guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: (pointCloud.count * MemoryLayout<UInt8>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        pointCloudBuffers = (xPositions, yPositions, zPositions, intensities)
+    public var pointClouds: [PointCloud] = [] { willSet {
+        pointCloudBuffers = []
+        for pointCloud in newValue {
+            guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+            guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+            guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+            guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: (pointCloud.count * MemoryLayout<UInt8>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+            pointCloudBuffers.append((xPositions, yPositions, zPositions, intensities))
+        }
     }}
-    private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil
+    private var pointCloudBuffers: [(xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)] = []
     
     private var cameraShift: float3 = .init(0)
     private var cameraOrbit: (theta: Float, phi: Float) = (0, 0)
@@ -66,7 +67,7 @@ public class ViewController: NSViewController, MTKViewDelegate {
             descriptor.vertexFunction = vertexShader
             descriptor.fragmentFunction = fragmentShader
             descriptor.sampleCount = view.sampleCount
-            descriptor.isAlphaToCoverageEnabled = true
+//            descriptor.isAlphaToCoverageEnabled = true
             descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
             descriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
             descriptor.inputPrimitiveTopology = .triangle
@@ -111,28 +112,38 @@ public class ViewController: NSViewController, MTKViewDelegate {
     }
     
     public func draw(in view: MTKView) {
-        guard let pointCloud = pointCloud else { return }
-        guard let pointCloudBuffers = pointCloudBuffers else { return }
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else { return }
         guard let drawable = view.currentDrawable else { return }
         
         let clipMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height))
         let viewMatrix = cameraMatrix
         
+        let colors = [
+            float3(x: 38, y: 139, z: 210) / 255,
+            float3(x: 220, y: 50, z: 47) / 255
+        ]
+        
         var uniforms = (
             viewMatrix: viewMatrix,
             clipMatrix: clipMatrix,
-            pointColor: float3(x: 38, y: 139, z: 210) / 255,
-            pointRadius: Float(1e-3)
+            pointColor: float3(.nan),
+            pointRadius: Float(5e-4)
         )
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
         renderEncoder.setRenderPipelineState(plottingPipelineState)
         renderEncoder.setDepthStencilState(plottingDepthStencilState)
-        renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0, 0], range: 0 ..< 4)
-        renderEncoder.setVertexBytes(&uniforms, length: MemoryLayout.stride(ofValue: uniforms), index: 4)
-        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: pointCloud.count * 3)
+        
+        var colorIndex = 0
+        for (pointCloud, pointCloudBuffers) in zip(pointClouds, pointCloudBuffers) {
+            uniforms.pointColor = colors[colorIndex]
+            renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0, 0], range: 0 ..< 4)
+            renderEncoder.setVertexBytes(&uniforms, length: MemoryLayout.stride(ofValue: uniforms), index: 4)
+            renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: pointCloud.count * 3)
+            colorIndex += 1
+        }
+        
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()

@@ -151,7 +151,7 @@ public class PointCloud {
         intensities.deallocate()
     }
     
-    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 16) throws {
+    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 128) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
         var elevations: [Double] = []
@@ -224,6 +224,10 @@ public class PointCloud {
         self.raddi = raddi
         self.intensities = finalIntensities
         self.octree = octree
+        
+        for index in 0 ..< count {
+            raddi[index] = self.nearestPoint(from: self[index].position).distance
+        }
     }
 }
 
@@ -254,7 +258,7 @@ extension PointCloud {
                 
                 for alternativeSubtreeIndex in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: alternativeSubtreeIndex)
-                    let distanceToAlternativeSubtree = Swift.min(abs(position - bounds.lowerBound).min()!, abs(position - bounds.upperBound).min()!)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
                     if distanceToAlternativeSubtree < nearest.distance {
                         let alternativeNearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[alternativeSubtreeIndex], bounds: alternativeSubtreeBounds)})
                         if alternativeNearest.distance < nearest.distance {

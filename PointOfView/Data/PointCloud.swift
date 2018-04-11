@@ -43,26 +43,26 @@ public class PointCloud {
         
         mutating func splitIfNeeded(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
             switch self {
-            case let .leaf(points):
-                guard points.count > maximumPointsPerLeaf else { return }
-                var subtreePoints = [[Index]](repeating: [], count: 8)
+            case let .leaf(pointIndices):
+                guard pointIndices.count > maximumPointsPerLeaf else { return }
+                var subtreePointIndices = [[Index]](repeating: [], count: 8)
                 
-                for point in points {
-                    let xPosition = xPositions[point]
-                    let yPosition = yPositions[point]
-                    let zPosition = zPositions[point]
-                    subtreePoints[bounds.subtreeIndex(for: .init(x: xPosition, y: yPosition, z: zPosition))].append(point)
+                for pointIndex in pointIndices {
+                    let xPosition = xPositions[pointIndex]
+                    let yPosition = yPositions[pointIndex]
+                    let zPosition = zPositions[pointIndex]
+                    subtreePointIndices[bounds.subtreeIndex(for: .init(x: xPosition, y: yPosition, z: zPosition))].append(pointIndex)
                 }
     
                 var subtrees = (
-                    Octree.leaf(subtreePoints[0]),
-                    Octree.leaf(subtreePoints[1]),
-                    Octree.leaf(subtreePoints[2]),
-                    Octree.leaf(subtreePoints[3]),
-                    Octree.leaf(subtreePoints[4]),
-                    Octree.leaf(subtreePoints[5]),
-                    Octree.leaf(subtreePoints[6]),
-                    Octree.leaf(subtreePoints[7])
+                    Octree.leaf(subtreePointIndices[0]),
+                    Octree.leaf(subtreePointIndices[1]),
+                    Octree.leaf(subtreePointIndices[2]),
+                    Octree.leaf(subtreePointIndices[3]),
+                    Octree.leaf(subtreePointIndices[4]),
+                    Octree.leaf(subtreePointIndices[5]),
+                    Octree.leaf(subtreePointIndices[6]),
+                    Octree.leaf(subtreePointIndices[7])
                 )
                 
                 subtrees.0.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 0), maximumPointsPerLeaf: maximumPointsPerLeaf)
@@ -104,6 +104,14 @@ public class PointCloud {
         let x: ClosedRange<Float>
         let y: ClosedRange<Float>
         let z: ClosedRange<Float>
+        
+        var lowerBound: float3 {
+            return .init(x: x.lowerBound, y: y.lowerBound, z: z.lowerBound)
+        }
+        
+        var upperBound: float3 {
+            return .init(x: x.upperBound, y: y.upperBound, z: z.upperBound)
+        }
         
         func subtreeBounds(at index: Int) -> OctreeBounds {
             return .init(
@@ -234,21 +242,28 @@ extension PointCloud: RandomAccessCollection {
 }
 
 extension PointCloud {
-    func nearestPoint(from position: float3) -> (distance: Float, index: Index)? {
-        func recurse(octree: Octree, bounds: OctreeBounds = .base) -> (Float, Index)? {
+    func nearestPoint(from position: float3) -> (distance: Float, index: Index) {
+        func recurse(octree: Octree, bounds: OctreeBounds = .base) -> (distance: Float, index: Index) {
             switch octree {
             case let .leaf(points):
-                return (zip(points.lazy.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 })
+                return (zip(points.lazy.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 })!
             case let .branch(subtrees):
                 let subtreeIndex = bounds.subtreeIndex(for: position)
                 
-                if let nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex)) }) { return nearest }
+                var nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex))})
                 
-                for index in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
-                    if let nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[index], bounds: bounds.subtreeBounds(at: subtreeIndex)) }) { return nearest }
+                for alternativeSubtreeIndex in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
+                    let alternativeSubtreeBounds = bounds.subtreeBounds(at: alternativeSubtreeIndex)
+                    let distanceToAlternativeSubtree = Swift.min(abs(position - bounds.lowerBound).min()!, abs(position - bounds.upperBound).min()!)
+                    if distanceToAlternativeSubtree < nearest.distance {
+                        let alternativeNearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[alternativeSubtreeIndex], bounds: alternativeSubtreeBounds)})
+                        if alternativeNearest.distance < nearest.distance {
+                            nearest = alternativeNearest
+                        }
+                    }
                 }
                 
-                return nil
+                return nearest
             default:
                 preconditionFailure()
             }

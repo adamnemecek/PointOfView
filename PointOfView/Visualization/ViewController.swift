@@ -12,11 +12,10 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        guard let raddi = device.makeBuffer(bytesNoCopy: pointCloud.raddi, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: (pointCloud.count * MemoryLayout<UInt8>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        pointCloudBuffers = (xPositions, yPositions, zPositions, raddi, intensities)
+        pointCloudBuffers = (xPositions, yPositions, zPositions, intensities)
     }}
-    private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, raddi: MTLBuffer, intensities: MTLBuffer)? = nil
+    private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil
     
     private var cameraShift: float3 = .init(0)
     private var cameraOrbit: (theta: Float, phi: Float) = (0, 0)
@@ -50,8 +49,9 @@ public class ViewController: NSViewController, MTKViewDelegate {
         view.autoResizeDrawable = true
         view.colorPixelFormat = .rgba16Float
         view.depthStencilPixelFormat = .depth32Float
-        view.sampleCount = 2
+        view.sampleCount = 8
         view.colorspace = CGColorSpace(name: CGColorSpace.linearSRGB)
+        view.clearColor = .init(red: 253 / 255, green: 246 / 255, blue: 227 / 255, alpha: 1)
         view.delegate = self
         view.device = device
         
@@ -116,20 +116,25 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else { return }
         guard let drawable = view.currentDrawable else { return }
         
-        var clipMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height))
-        var viewMatrix = cameraMatrix
+        let clipMatrix = float4x4.infinitePerspective(fovy: .pi / 2, nearDistance: 1e-3, aspectRatio: .init(view.frame.width / view.frame.height))
+        let viewMatrix = cameraMatrix
+        
+        var uniforms = (
+            viewMatrix: viewMatrix,
+            clipMatrix: clipMatrix,
+            pointColor: float3(x: 38, y: 139, z: 210) / 255,
+            pointRadius: Float(1e-3)
+        )
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
         renderEncoder.setRenderPipelineState(plottingPipelineState)
         renderEncoder.setDepthStencilState(plottingDepthStencilState)
-        renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.raddi, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0, 0], range: 0 ..< 5)
-        renderEncoder.setVertexBytes(&viewMatrix, length: MemoryLayout<float4x4>.size, index: 5)
-        renderEncoder.setVertexBytes(&clipMatrix, length: MemoryLayout<float4x4>.size, index: 6)
+        renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0, 0], range: 0 ..< 4)
+        renderEncoder.setVertexBytes(&uniforms, length: MemoryLayout.stride(ofValue: uniforms), index: 4)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: pointCloud.count * 3)
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
 }
-

@@ -5,22 +5,27 @@ struct PointVertex {
     float4 clipPosition           [[position]];
     float3 viewPosition [[center_perspective]];
     float3 pointViewPosition          [[flat]];
-    float pointRadius                 [[flat]];
-    float intensity                   [[flat]];
+    float  pointRadius                [[flat]];
+    float3 pointColor                 [[flat]];
+};
+
+struct Uniforms {
+    float4x4 viewMatrix;
+    float4x4 clipMatrix;
+    float3 pointColor;
+    float pointRadius;
 };
 
 vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
                               constant float    *yPositions  [[buffer(1)]],
                               constant float    *zPositions  [[buffer(2)]],
-                              constant float    *raddi       [[buffer(3)]],
-                              constant uchar    *intensities [[buffer(4)]],
-                              constant float4x4 &viewMatrix  [[buffer(5)]],
-                              constant float4x4 &clipMatrix  [[buffer(6)]],
+                              constant uchar    *intensities [[buffer(3)]],
+                              constant Uniforms &uniforms    [[buffer(4)]],
                               uint               vertexID    [[vertex_id]]) {
     PointVertex out;
-    out.pointRadius = raddi[vertexID / 3];
-    out.intensity = float(intensities[vertexID / 3]) / 255;
-    out.pointViewPosition = (viewMatrix * float4(xPositions[vertexID / 3], yPositions[vertexID / 3], zPositions[vertexID / 3], 1)).xyz;
+    out.pointRadius = uniforms.pointRadius;
+    out.pointColor = float(intensities[vertexID / 3]) / 255 * uniforms.pointColor;
+    out.pointViewPosition = (uniforms.viewMatrix * float4(xPositions[vertexID / 3], yPositions[vertexID / 3], zPositions[vertexID / 3], 1)).xyz;
     
     float3 forward = normalize(out.pointViewPosition);
     float3 horizontal = normalize(cross(out.pointViewPosition, float3(0, 1, 0)));
@@ -37,7 +42,7 @@ vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
     }
     
     out.pointViewPosition -= forward * out.pointRadius;
-    out.clipPosition = clipMatrix * float4(out.viewPosition, 1);
+    out.clipPosition = uniforms.clipMatrix * float4(out.viewPosition, 1);
     return out;
 }
 
@@ -53,5 +58,5 @@ fragment float4 f_plotting(PointVertex in [[stage_in]]) {
     float c2s = c2.x + c2.y + c2.z;
     float radicand = max(cds2 - d2s * (c2s - in.pointRadius * in.pointRadius), 0.0);
     float factor = 2 * sqrt(radicand) / d2s;
-    return float4(float3(in.intensity), pow(factor / in.pointRadius / 2, 2.0));
+    return float4(in.pointColor, pow(factor / in.pointRadius / 2, 2.0));
 }

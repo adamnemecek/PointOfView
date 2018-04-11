@@ -134,7 +134,6 @@ public class PointCloud {
     internal let xPositions: UnsafeMutablePointer<Float>
     internal let yPositions: UnsafeMutablePointer<Float>
     internal let zPositions: UnsafeMutablePointer<Float>
-    internal let raddi: UnsafeMutablePointer<Float>
     internal let intensities: UnsafeMutablePointer<UInt8>
     
     private let octree: Octree
@@ -147,11 +146,10 @@ public class PointCloud {
         xPositions.deallocate()
         yPositions.deallocate()
         zPositions.deallocate()
-        raddi.deallocate()
         intensities.deallocate()
     }
     
-    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 32) throws {
+    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 64) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
         var elevations: [Double] = []
@@ -201,7 +199,6 @@ public class PointCloud {
         let xPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let yPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let zPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
-        let raddi = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let finalIntensities = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<UInt8>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: UInt8.self, capacity: count)
         
         var octree = Octree.leaf([])
@@ -220,13 +217,8 @@ public class PointCloud {
         self.xPositions = xPositions
         self.yPositions = yPositions
         self.zPositions = zPositions
-        self.raddi = raddi
         self.intensities = finalIntensities
         self.octree = octree
-        
-        DispatchQueue.concurrentPerform(iterations: count) { index in
-            raddi[index] = self.nearestPoint(fromPointAtIndex: index).distance / 2
-        }
     }
 }
 

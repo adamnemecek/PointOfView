@@ -1,23 +1,24 @@
 #include <metal_stdlib>
 using namespace metal;
 
-constexpr constant static float pointRadius = 1.0e-3;
-
 struct PointVertex {
     float4 clipPosition           [[position]];
     float3 viewPosition [[center_perspective]];
     float3 pointViewPosition          [[flat]];
+    float pointRadius                 [[flat]];
     float intensity                   [[flat]];
 };
 
 vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
                               constant float    *yPositions  [[buffer(1)]],
                               constant float    *zPositions  [[buffer(2)]],
-                              constant uchar    *intensities [[buffer(3)]],
-                              constant float4x4 &viewMatrix  [[buffer(4)]],
-                              constant float4x4 &clipMatrix  [[buffer(5)]],
+                              constant float    *raddi       [[buffer(3)]],
+                              constant uchar    *intensities [[buffer(4)]],
+                              constant float4x4 &viewMatrix  [[buffer(5)]],
+                              constant float4x4 &clipMatrix  [[buffer(6)]],
                               uint               vertexID    [[vertex_id]]) {
     PointVertex out;
+    out.pointRadius = raddi[vertexID / 3];
     out.intensity = float(intensities[vertexID / 3]) / 255;
     out.pointViewPosition = (viewMatrix * float4(xPositions[vertexID / 3], yPositions[vertexID / 3], zPositions[vertexID / 3], 1)).xyz;
     
@@ -26,16 +27,16 @@ vertex PointVertex v_plotting(constant float    *xPositions  [[buffer(0)]],
     float3 vertical = normalize(cross(horizontal, out.pointViewPosition));
     switch (vertexID % 3) {
         case 0:
-            out.viewPosition = out.pointViewPosition + vertical * pointRadius * 2;
+            out.viewPosition = out.pointViewPosition + vertical * out.pointRadius * 2;
             break;
         case 1:
-            out.viewPosition = out.pointViewPosition - vertical * pointRadius + horizontal * pointRadius / sqrt(3.0) * 3;
+            out.viewPosition = out.pointViewPosition - vertical * out.pointRadius + horizontal * out.pointRadius / sqrt(3.0) * 3;
             break;
         default:
-            out.viewPosition = out.pointViewPosition - vertical * pointRadius - horizontal * pointRadius / sqrt(3.0) * 3;
+            out.viewPosition = out.pointViewPosition - vertical * out.pointRadius - horizontal * out.pointRadius / sqrt(3.0) * 3;
     }
     
-    out.pointViewPosition -= forward * pointRadius;
+    out.pointViewPosition -= forward * out.pointRadius;
     out.clipPosition = clipMatrix * float4(out.viewPosition, 1);
     return out;
 }
@@ -50,7 +51,7 @@ fragment float4 f_plotting(PointVertex in [[stage_in]]) {
     float3 c2 = c * c;
     float d2s = d2.x + d2.y + d2.z;
     float c2s = c2.x + c2.y + c2.z;
-    float radicand = max(cds2 - d2s * (c2s - pointRadius * pointRadius), 0.0);
+    float radicand = max(cds2 - d2s * (c2s - in.pointRadius * in.pointRadius), 0.0);
     float factor = 2 * sqrt(radicand) / d2s;
-    return float4(float3(in.intensity), pow(factor / pointRadius / 2, 2.0));
+    return float4(float3(in.intensity), pow(factor / in.pointRadius / 2, 2.0));
 }

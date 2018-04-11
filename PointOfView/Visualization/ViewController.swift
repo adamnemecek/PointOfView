@@ -12,10 +12,11 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let xPositions = device.makeBuffer(bytesNoCopy: pointCloud.xPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let yPositions = device.makeBuffer(bytesNoCopy: pointCloud.yPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let zPositions = device.makeBuffer(bytesNoCopy: pointCloud.zPositions, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
+        guard let raddi = device.makeBuffer(bytesNoCopy: pointCloud.raddi, length: (pointCloud.count * MemoryLayout<Float>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
         guard let intensities = device.makeBuffer(bytesNoCopy: pointCloud.intensities, length: (pointCloud.count * MemoryLayout<UInt8>.stride).aligned(to: 4096), options: .storageModeShared, deallocator: nil) else { return }
-        pointCloudBuffers = (xPositions, yPositions, zPositions, intensities)
+        pointCloudBuffers = (xPositions, yPositions, zPositions, raddi, intensities)
     }}
-    private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, intensities: MTLBuffer)? = nil
+    private var pointCloudBuffers: (xPositions: MTLBuffer, yPositions: MTLBuffer, zPositions: MTLBuffer, raddi: MTLBuffer, intensities: MTLBuffer)? = nil
     
     private var cameraShift: float3 = .init(0)
     private var cameraOrbit: (theta: Float, phi: Float) = (0, 0)
@@ -122,9 +123,9 @@ public class ViewController: NSViewController, MTKViewDelegate {
         guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
         renderEncoder.setRenderPipelineState(plottingPipelineState)
         renderEncoder.setDepthStencilState(plottingDepthStencilState)
-        renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0], range: 0 ..< 4)
-        renderEncoder.setVertexBytes(&viewMatrix, length: MemoryLayout<float4x4>.size, index: 4)
-        renderEncoder.setVertexBytes(&clipMatrix, length: MemoryLayout<float4x4>.size, index: 5)
+        renderEncoder.setVertexBuffers([pointCloudBuffers.xPositions, pointCloudBuffers.yPositions, pointCloudBuffers.zPositions, pointCloudBuffers.raddi, pointCloudBuffers.intensities], offsets: [0, 0, 0, 0, 0], range: 0 ..< 5)
+        renderEncoder.setVertexBytes(&viewMatrix, length: MemoryLayout<float4x4>.size, index: 5)
+        renderEncoder.setVertexBytes(&clipMatrix, length: MemoryLayout<float4x4>.size, index: 6)
         renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: pointCloud.count * 3)
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)

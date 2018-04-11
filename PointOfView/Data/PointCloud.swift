@@ -151,7 +151,7 @@ public class PointCloud {
         intensities.deallocate()
     }
     
-    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 128) throws {
+    public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 32) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
         var elevations: [Double] = []
@@ -210,7 +210,6 @@ public class PointCloud {
             xPositions[index] = .init((longitudes[index] - ensuredLongitudeBounds.center) / ensuredLongitudeBounds.halfLength)
             zPositions[index] = .init((latitudes[index] - ensuredLatitudeBounds.center) / ensuredLatitudeBounds.halfLength)
             yPositions[index] = .init((elevations[index] - ensuredElevationBounds.center) / ensuredElevationBounds.halfLength)
-            raddi[index] = .infinity
             intensities[index] = intensities[index]
             
             let position = float3(x: xPositions[index], y: yPositions[index], z: zPositions[index])
@@ -225,8 +224,8 @@ public class PointCloud {
         self.intensities = finalIntensities
         self.octree = octree
         
-        for index in 0 ..< count {
-            raddi[index] = self.nearestPoint(from: self[index].position).distance / 2
+        DispatchQueue.concurrentPerform(iterations: count) { index in
+            raddi[index] = self.nearestPoint(fromPointAtIndex: index).distance / 2
         }
     }
 }
@@ -246,23 +245,31 @@ extension PointCloud: RandomAccessCollection {
 }
 
 extension PointCloud {
-    func nearestPoint(from position: float3) -> (distance: Float, index: Index) {
-        func recurse(octree: Octree, bounds: OctreeBounds = .base) -> (distance: Float, index: Index) {
+    func nearestPoint(fromPointAtIndex pointIndex: Index) -> (distance: Float, index: Index) {
+        let position = self[pointIndex].position;
+        
+        func recurse(octree: Octree, bounds: OctreeBounds = .base, best: (distance: Float, index: Index) = (.infinity, -1)) -> (distance: Float, index: Index) {
             switch octree {
             case let .leaf(points):
-                return (zip(points.lazy.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 })!
+                let nearest = (zip(points.lazy.filter { $0 != pointIndex }.map { length(self[$0].position - position) }, points).min { $0.0 < $1.0 }) ?? best
+                if nearest.0 < best.distance {
+                    return nearest
+                }
+                else {
+                    return best
+                }
             case let .branch(subtrees):
                 let subtreeIndex = bounds.subtreeIndex(for: position)
-                
-                var nearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex))})
+                var nearest = withUnsafeBytes(of: &subtrees.contents) {
+                    recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex), best: best)
+                }
                 
                 for alternativeSubtreeIndex in (0 ..< 7).lazy.filter({ $0 != subtreeIndex }) {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: alternativeSubtreeIndex)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
                     if distanceToAlternativeSubtree < nearest.distance {
-                        let alternativeNearest = withUnsafeBytes(of: &subtrees.contents, { recurse(octree: $0.bindMemory(to: Octree.self)[alternativeSubtreeIndex], bounds: alternativeSubtreeBounds)})
-                        if alternativeNearest.distance < nearest.distance {
-                            nearest = alternativeNearest
+                        nearest = withUnsafeBytes(of: &subtrees.contents) {
+                            recurse(octree: $0.bindMemory(to: Octree.self)[alternativeSubtreeIndex], bounds: alternativeSubtreeBounds, best: nearest)
                         }
                     }
                 }
@@ -272,6 +279,7 @@ extension PointCloud {
                 preconditionFailure()
             }
         }
+        
         return recurse(octree: self.octree)
     }
 }

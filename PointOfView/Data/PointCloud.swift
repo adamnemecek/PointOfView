@@ -27,33 +27,33 @@ public struct Point {
 public class PointCloud {
     public struct ParseError: Error {
     }
-    
+
     private class MutationCell<Wrapped> {
         var contents: Wrapped
-        
+
         init(_ contents: Wrapped) {
             self.contents = contents
         }
     }
-    
+
     private enum Octree {
         case `nil`
         case leaf([Index])
         case branch(MutationCell<(Octree, Octree, Octree, Octree, Octree, Octree, Octree, Octree)>)
-        
+
         mutating func splitIfNeeded(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
             switch self {
             case let .leaf(pointIndices):
                 guard pointIndices.count > maximumPointsPerLeaf else { return }
                 var subtreePointIndices = [[Index]](repeating: [], count: 8)
-                
+
                 for pointIndex in pointIndices {
                     let xPosition = xPositions[pointIndex]
                     let yPosition = yPositions[pointIndex]
                     let zPosition = zPositions[pointIndex]
                     subtreePointIndices[bounds.subtreeIndex(for: .init(x: xPosition, y: yPosition, z: zPosition))].append(pointIndex)
                 }
-    
+
                 var subtrees = (
                     Octree.leaf(subtreePointIndices[0]),
                     Octree.leaf(subtreePointIndices[1]),
@@ -64,7 +64,7 @@ public class PointCloud {
                     Octree.leaf(subtreePointIndices[6]),
                     Octree.leaf(subtreePointIndices[7])
                 )
-                
+
                 subtrees.0.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 0), maximumPointsPerLeaf: maximumPointsPerLeaf)
                 subtrees.1.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 1), maximumPointsPerLeaf: maximumPointsPerLeaf)
                 subtrees.2.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 2), maximumPointsPerLeaf: maximumPointsPerLeaf)
@@ -73,13 +73,13 @@ public class PointCloud {
                 subtrees.5.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 5), maximumPointsPerLeaf: maximumPointsPerLeaf)
                 subtrees.6.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 6), maximumPointsPerLeaf: maximumPointsPerLeaf)
                 subtrees.7.splitIfNeeded(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, bounds: bounds.subtreeBounds(at: 7), maximumPointsPerLeaf: maximumPointsPerLeaf)
-                
+
                 self = .branch(MutationCell(subtrees))
             default:
                 preconditionFailure()
             }
         }
-        
+
         mutating func insertPoint(xPositions: UnsafePointer<Float>, yPositions: UnsafePointer<Float>, zPositions: UnsafePointer<Float>, pointIndex: Int, pointPosition: float3, bounds: OctreeBounds, maximumPointsPerLeaf: Int) {
             switch self {
             case var .leaf(points):
@@ -97,22 +97,22 @@ public class PointCloud {
             }
         }
     }
-    
+
     private struct OctreeBounds {
         static let base = OctreeBounds(x: -1 ... 1, y: -1 ... 1, z: -1 ... 1)
-        
+
         let x: ClosedRange<Float>
         let y: ClosedRange<Float>
         let z: ClosedRange<Float>
-        
+
         var lowerBound: float3 {
             return .init(x: x.lowerBound, y: y.lowerBound, z: z.lowerBound)
         }
-        
+
         var upperBound: float3 {
             return .init(x: x.upperBound, y: y.upperBound, z: z.upperBound)
         }
-        
+
         func subtreeBounds(at index: Int) -> OctreeBounds {
             return .init(
                 x: index & 1 != 0 ? x.center ... x.upperBound : x.lowerBound ... x.center,
@@ -120,7 +120,7 @@ public class PointCloud {
                 z: index & 4 != 0 ? z.center ... z.upperBound : z.lowerBound ... z.center
             )
         }
-        
+
         func subtreeIndex(for position: float3) -> Int {
             let xBit = position.x > x.center
             let yBit = position.y > y.center
@@ -128,37 +128,37 @@ public class PointCloud {
             return (xBit ? 1 : 0) + (yBit ? 2 : 0) + (zBit ? 4 : 0)
         }
     }
-    
+
     public let count: Int
-    
+
     internal let xPositions: UnsafeMutablePointer<Float>
     internal let yPositions: UnsafeMutablePointer<Float>
     internal let zPositions: UnsafeMutablePointer<Float>
     internal let intensities: UnsafeMutablePointer<UInt8>
-    
+
     private let octree: Octree
-    
+
     public let latitudeBounds: ClosedRange<Double>
     public let longitudeBounds: ClosedRange<Double>
     public let elevationBounds: ClosedRange<Double>
-    
+
     deinit {
         xPositions.deallocate()
         yPositions.deallocate()
         zPositions.deallocate()
         intensities.deallocate()
     }
-    
+
     public init(contentsOf url: URL, maximumPointsPerLeaf: Int = 64) throws {
         var latitudes: [Double] = []
         var longitudes: [Double] = []
         var elevations: [Double] = []
         var intensities: [UInt8] = []
-        
+
         var latitudeBounds: ClosedRange<Double>? = nil
         var longitudeBounds: ClosedRange<Double>? = nil
         var elevationBounds: ClosedRange<Double>? = nil
-        
+
         let data = try Data(contentsOf: url)
         try data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
             let buffer = UnsafeBufferPointer.init(start: bytes, count: data.count)
@@ -168,51 +168,51 @@ public class PointCloud {
                 guard let secondSpace = buffer[(firstSpace + 1)...].index(of: .init(ascii: " ")) else { throw ParseError() }
                 guard let thirdSpace = buffer[(secondSpace + 1)...].index(of: .init(ascii: " ")) else { throw ParseError() }
                 guard let newline = buffer[(thirdSpace + 1)...].index(of: .init(ascii: "\n")) else { throw ParseError() }
-                
+
                 let latitude = try parseDecimal(bytes: buffer[bufferIndex ..< firstSpace])
                 let longitude = try parseDecimal(bytes: buffer[(firstSpace + 1) ..< secondSpace])
                 let elevation = try parseDecimal(bytes: buffer[(secondSpace + 1) ..< thirdSpace])
                 let intensity = UInt8(parseInteger(bytes: buffer[(thirdSpace + 1) ..< newline]))
-                
+
                 latitudeBounds = latitudeBounds.map { $0.including(latitude) } ?? latitude...latitude
                 longitudeBounds = longitudeBounds.map { $0.including(longitude) } ?? longitude...longitude
                 elevationBounds = elevationBounds.map { $0.including(elevation) } ?? elevation...elevation
-                
+
                 latitudes.append(latitude)
                 longitudes.append(longitude)
                 elevations.append(elevation)
                 intensities.append(intensity)
-                
+
                 bufferIndex = newline + 1
             }
         }
-        
+
         guard let ensuredLatitudeBounds = latitudeBounds else { throw ParseError() }
         guard let ensuredLongitudeBounds = longitudeBounds else { throw ParseError() }
         guard let ensuredElevationBounds = elevationBounds else { throw ParseError() }
-        
+
         self.latitudeBounds = ensuredLatitudeBounds
         self.longitudeBounds = ensuredLongitudeBounds
         self.elevationBounds = ensuredElevationBounds
-        
+
         let count = latitudes.count
         let xPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let yPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let zPositions = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<Float>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: Float.self, capacity: count)
         let finalIntensities = UnsafeMutableRawPointer.allocate(byteCount: (MemoryLayout<UInt8>.stride * count).aligned(to: 4096), alignment: 4096).bindMemory(to: UInt8.self, capacity: count)
-        
+
         var octree = Octree.leaf([])
-        
+
         for index in 0 ..< count {
             xPositions[index] = .init((longitudes[index] - ensuredLongitudeBounds.center) / ensuredLongitudeBounds.halfLength)
             zPositions[index] = .init((latitudes[index] - ensuredLatitudeBounds.center) / ensuredLatitudeBounds.halfLength)
             yPositions[index] = .init((elevations[index] - ensuredElevationBounds.center) / ensuredElevationBounds.halfLength)
             intensities[index] = intensities[index]
-            
+
             let position = float3(x: xPositions[index], y: yPositions[index], z: zPositions[index])
             octree.insertPoint(xPositions: xPositions, yPositions: yPositions, zPositions: zPositions, pointIndex: index, pointPosition: position, bounds: .base, maximumPointsPerLeaf: maximumPointsPerLeaf)
         }
-        
+
         self.count = count
         self.xPositions = xPositions
         self.yPositions = yPositions
@@ -239,7 +239,7 @@ extension PointCloud: RandomAccessCollection {
 extension PointCloud {
     func nearestPoint(fromPointAtIndex pointIndex: Index) -> (distance: Float, index: Index) {
         let position = self[pointIndex].position;
-        
+
         func recurse(octree: Octree, bounds: OctreeBounds = .base, best: (distance: Float, index: Index) = (.infinity, -1)) -> (distance: Float, index: Index) {
             switch octree {
             case let .leaf(points):
@@ -258,7 +258,7 @@ extension PointCloud {
                 var nearest = withUnsafeBytes(of: &subtrees.contents) {
                     recurse(octree: $0.bindMemory(to: Octree.self)[subtreeIndex], bounds: bounds.subtreeBounds(at: subtreeIndex), best: best)
                 }
-                
+
                 if subtreeIndex != 0 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 0)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -268,7 +268,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 1 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 1)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -278,7 +278,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 2 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 2)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -288,7 +288,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 3 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 3)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -298,7 +298,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 4 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 4)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -308,7 +308,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 5 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 5)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -318,7 +318,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 6 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 6)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -328,7 +328,7 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 if subtreeIndex != 7 {
                     let alternativeSubtreeBounds = bounds.subtreeBounds(at: 7)
                     let distanceToAlternativeSubtree = Swift.min(abs(position - alternativeSubtreeBounds.lowerBound).min()!, abs(position - alternativeSubtreeBounds.upperBound).min()!)
@@ -338,13 +338,13 @@ extension PointCloud {
                         }
                     }
                 }
-                
+
                 return nearest
             default:
                 preconditionFailure()
             }
         }
-        
+
         return recurse(octree: self.octree)
     }
 }
